@@ -7,8 +7,8 @@ public class PlayerController : MonoBehaviour {
 
 	private Rigidbody rb;
 	private int count;
-	public float moveForce;
-    public float maxVelocity;
+	public float moveForce = 50;
+    public float maxVelocity = 10;
 	public Text countText;
 	public Text winText;
 
