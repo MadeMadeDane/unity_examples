@@ -7,18 +7,25 @@ public class PlayerController : MonoBehaviour {
 
 	private Rigidbody rb;
 	private int count;
-	public float moveForce = 50;
+    private int jumpCount;
+    public float moveForce = 50;
     public float maxVelocity = 10;
     public float jumpForce = 200;
-	public Text countText;
+    public int maxJumpCount = 3;
+    public bool bouncyBoi = false;
+    public bool seeYa = false;
+
+    public Text countText;
 	public Text winText;
 
 	void Start ()
 	{
 		rb = GetComponent<Rigidbody>();
 		count = 0;
+        jumpCount = maxJumpCount;
 		changeCountText();
 		winText.text = "";
+        rb.freezeRotation = true;
 	}
 	void FixedUpdate ()
 	{
@@ -33,19 +40,40 @@ public class PlayerController : MonoBehaviour {
             rb.AddForce(movement * moveForce);
         } else {
         }
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            Vector3 jumpVector = new Vector3(0.0f, jumpForce, 0.0f);
-            rb.AddForce(jumpVector);
+
+    }
+
+    private void Update()
+    {
+        Debug.DrawRay(transform.position,transform.up*2,Color.blue,0,false);
+        if (Input.GetKeyDown(KeyCode.Space) && jumpCount > 0) {
+            Vector3 jumpVector = jumpForce * transform.up;
+            rb.AddForce(jumpVector, ForceMode.VelocityChange);
+            jumpCount--;
         }
     }
-	void OnTriggerEnter(Collider other) {
+    void OnTriggerEnter(Collider other) {
 		if (other.gameObject.CompareTag ("collectable")) {
 			other.gameObject.SetActive (false);
 			count++;
 			changeCountText();
 		}
 	}
-	void changeCountText () {
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.contacts.Length > 0) {
+            var norm = other.contacts[0].normal;
+            print(norm.y);
+            Debug.DrawRay(other.contacts[0].point, norm * 2,Color.green,20);
+            if(bouncyBoi) rb.AddForce(norm*jumpForce,ForceMode.Impulse);
+            if (seeYa) rb.AddForce(Random.rotation * norm * Random.Range(0, 9000));
+             if (other.contacts[0].normal.y > 1 / 2) {
+                jumpCount = maxJumpCount;
+
+            }
+        }
+    }
+    void changeCountText () {
 		countText.text = "Count: " + count.ToString();
 		if (count >= 4) {
 			winText.text = "You Win";
