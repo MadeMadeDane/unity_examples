@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour {
     public float AirAcceleration;
     public float SpeedDamp;
     public float AirSpeedDamp;
+    public float slideMultiplier;
     public CharacterController cc;
 
     public float DownGravityAdd;
@@ -30,6 +31,7 @@ public class PlayerController : MonoBehaviour {
 
     private Vector3 current_velocity;
     private Vector3 accel;
+    private Vector3 current_slide;
     private float GravityMult;
 
     // Use this for initialization
@@ -42,6 +44,7 @@ public class PlayerController : MonoBehaviour {
         AirAcceleration = 300;
         SpeedDamp = 10f;
         AirSpeedDamp = 0.01f;
+        slideMultiplier = 1;
 
         // Gravity modifiers
         DownGravityAdd = 0;
@@ -61,6 +64,7 @@ public class PlayerController : MonoBehaviour {
 
         // Initial state
         current_velocity = Vector3.zero;
+        current_slide = Vector3.zero;
         StartPos = new Vector3(0.5f, 1.5f, 0.5f);
         transform.position = StartPos;
     }
@@ -74,7 +78,8 @@ public class PlayerController : MonoBehaviour {
         BufferJumpTimeDelta = Mathf.Clamp(BufferJumpTimeDelta + Time.deltaTime, 0, 2*BufferJumpGracePeriod);
         Debug.Log("Current velocity: " + Vector3.ProjectOnPlane(current_velocity, transform.up).magnitude.ToString());
         Debug.Log("Velocity error: " + (current_velocity - cc.velocity).ToString());
-        accel = Vector3.zero;
+        accel = current_slide;
+        current_slide = Vector3.zero;
 
         HandleMovement();
 
@@ -165,7 +170,7 @@ public class PlayerController : MonoBehaviour {
     private bool OnGround()
     {
         canJump = canJump && (LandingTimeDelta < jumpGracePeriod);
-        return (cc.isGrounded || canJump);
+        return canJump;
     }
 
     // Set the player to a jumping state
@@ -183,7 +188,7 @@ public class PlayerController : MonoBehaviour {
     // Handle collisions on player move
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        // isGrounded doesn't work properly on slopes, use this as well
+        // isGrounded doesn't work properly on slopes, replace with this.
         if (hit.normal.y > 0.5)
         {
             Debug.DrawRay(transform.position, hit.normal, Color.red, 10);
@@ -196,6 +201,13 @@ public class PlayerController : MonoBehaviour {
                 // Defer the jump so that it happens in update
                 willJump = true;
             }
+        }
+        // Use this for detecting slopes to slide down
+        else
+        {
+            Vector3 slideVec = Vector3.ProjectOnPlane(Physics.gravity, hit.normal);
+            float slideC = 1f; //Mathf.Abs(Vector3.Dot(hit.normal, transform.right));
+            current_slide = slideVec * slideMultiplier * slideC / (hit.collider.material.staticFriction + 1);
         }
         Debug.Log(hit.gameObject.tag);
         if (hit.gameObject.tag == "Respawn")
