@@ -48,6 +48,7 @@ public class CameraController : MonoBehaviour {
         transform.localPosition = target_follow_distance;
         transform.localRotation = Quaternion.Euler(target_follow_angle);
         Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 	
 	// LateUpdate is called after update. Ensures we are operating on the latest transform changes.
