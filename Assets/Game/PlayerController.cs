@@ -31,7 +31,7 @@ public class PlayerController : MonoBehaviour {
 
     private Vector3 current_velocity;
     private Vector3 accel;
-    private Vector3 current_slide;
+    private ControllerColliderHit lastHit;
     private float GravityMult;
 
     // Use this for initialization
@@ -39,9 +39,9 @@ public class PlayerController : MonoBehaviour {
         // Movement values
         maxSpeed = 4;
         RunSpeed = 3;
-        AirSpeed = 0.25f;
+        AirSpeed = 0.30f;
         GroundAcceleration = 20;
-        AirAcceleration = 300;
+        AirAcceleration = 500;
         SpeedDamp = 10f;
         AirSpeedDamp = 0.01f;
         slideMultiplier = 1;
@@ -64,7 +64,6 @@ public class PlayerController : MonoBehaviour {
 
         // Initial state
         current_velocity = Vector3.zero;
-        current_slide = Vector3.zero;
         StartPos = new Vector3(0.5f, 1.5f, 0.5f);
         transform.position = StartPos;
     }
@@ -72,14 +71,12 @@ public class PlayerController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         // Get starting values
-        current_velocity = cc.velocity;
         GravityMult = 1;
         LandingTimeDelta = Mathf.Clamp(LandingTimeDelta + Time.deltaTime, 0, 2*jumpGracePeriod);
         BufferJumpTimeDelta = Mathf.Clamp(BufferJumpTimeDelta + Time.deltaTime, 0, 2*BufferJumpGracePeriod);
         Debug.Log("Current velocity: " + Vector3.ProjectOnPlane(current_velocity, transform.up).magnitude.ToString());
         Debug.Log("Velocity error: " + (current_velocity - cc.velocity).ToString());
-        accel = current_slide;
-        current_slide = Vector3.zero;
+        accel = Vector3.zero;
 
         HandleMovement();
 
@@ -95,9 +92,11 @@ public class PlayerController : MonoBehaviour {
     private void HandleMovement()
     {
         Vector3 movVec = Input.GetAxisRaw("Vertical") * transform.forward + Input.GetAxisRaw("Horizontal") * transform.right;
-        Debug.DrawRay(transform.position, Vector3.ProjectOnPlane(current_velocity, transform.up).normalized, Color.green, 0);
-        Debug.DrawRay(transform.position, movVec.normalized, Color.blue, 0);
-
+        if (lastHit != null && cc.isGrounded)
+        {
+            //Debug.Log("We are on the ground");
+            movVec = Vector3.ProjectOnPlane(movVec, lastHit.normal);
+        }
         if (OnGround())
         {
             AccelerateTo(movVec, RunSpeed, GroundAcceleration);
@@ -111,6 +110,8 @@ public class PlayerController : MonoBehaviour {
             AccelerateTo(movVec, AirSpeed, AirAcceleration);
             accel += -Vector3.ProjectOnPlane(current_velocity, transform.up) * AirSpeedDamp;
         }
+        Debug.DrawRay(transform.position, Vector3.ProjectOnPlane(current_velocity, transform.up).normalized, Color.green, 0);
+        Debug.DrawRay(transform.position, movVec.normalized, Color.blue, 0);
     }
 
     // Try to accelerate to the desired speed in the direction specified
@@ -138,10 +139,6 @@ public class PlayerController : MonoBehaviour {
         {
             isJumping = false;
             isFalling = false;
-        }
-        else
-        {
-            //accel += -current_velocity * AirSpeedDamp;
         }
 
         // Add additional gravity when going down
@@ -188,9 +185,13 @@ public class PlayerController : MonoBehaviour {
     // Handle collisions on player move
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
+        // Conserve velocity along plane, zero it out on the normal
+        lastHit = hit;
+
         // isGrounded doesn't work properly on slopes, replace with this.
         if (hit.normal.y > 0.5)
         {
+            //Debug.Log("On the ground");
             Debug.DrawRay(transform.position, hit.normal, Color.red, 10);
             canJump = true;
             LandingTimeDelta = 0;
@@ -205,16 +206,12 @@ public class PlayerController : MonoBehaviour {
         // Use this for detecting slopes to slide down
         else
         {
-            Vector3 slideVec = Vector3.ProjectOnPlane(Physics.gravity, hit.normal);
-            float slideC = 1f; //Mathf.Abs(Vector3.Dot(hit.normal, transform.right));
-            current_slide = slideVec * slideMultiplier * slideC / (hit.collider.material.staticFriction + 1);
+            Debug.Log("On a slide");
+            current_velocity = Vector3.ProjectOnPlane(current_velocity, hit.normal);
         }
-        Debug.Log(hit.gameObject.tag);
         if (hit.gameObject.tag == "Respawn")
         {
-            Debug.Log("we got here");
             StartCoroutine(DeferedTeleport(StartPos));
-            //GetComponent<Collider>().enabled = true;
         }
     }
 
