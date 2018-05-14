@@ -207,7 +207,10 @@ public class PlayerController : MonoBehaviour {
         else
         {
             Debug.Log("On a slide");
-            current_velocity = Vector3.ProjectOnPlane(current_velocity, hit.normal);
+            if (Vector3.Dot(current_velocity, hit.normal) < 0)
+            {
+                current_velocity = Vector3.ProjectOnPlane(current_velocity, hit.normal);
+            }
         }
         if (hit.gameObject.tag == "Respawn")
         {
