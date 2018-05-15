@@ -12,7 +12,9 @@ public class PlayerController : MonoBehaviour {
     public float AirAcceleration;
     public float SpeedDamp;
     public float AirSpeedDamp;
-    public float slideMultiplier;
+    public float SlideSpeed;
+    private float SlideGracePeriod;
+    private float SlideTimeDelta;
     public CharacterController cc;
 
     public float DownGravityAdd;
@@ -44,7 +46,9 @@ public class PlayerController : MonoBehaviour {
         AirAcceleration = 500;
         SpeedDamp = 10f;
         AirSpeedDamp = 0.01f;
-        slideMultiplier = 1;
+        SlideGracePeriod = 0.2f;
+        SlideTimeDelta = SlideGracePeriod;
+        SlideSpeed = 4f;
 
         // Gravity modifiers
         DownGravityAdd = 0;
@@ -54,13 +58,13 @@ public class PlayerController : MonoBehaviour {
         JumpVelocity = 4;
         isJumping = false;
         isFalling = false;
-        canJump = true;
+        canJump = false;
         willJump = false;
         // Jump timers for early/late jumps
-        jumpGracePeriod = 0.3f;
+        jumpGracePeriod = 0.1f;
         LandingTimeDelta = 0;
         BufferJumpGracePeriod = 0.1f;
-        BufferJumpTimeDelta = 0;
+        BufferJumpTimeDelta = BufferJumpGracePeriod;
 
         // Initial state
         current_velocity = Vector3.zero;
@@ -72,9 +76,7 @@ public class PlayerController : MonoBehaviour {
 	void Update () {
         // Get starting values
         GravityMult = 1;
-        LandingTimeDelta = Mathf.Clamp(LandingTimeDelta + Time.deltaTime, 0, 2*jumpGracePeriod);
-        BufferJumpTimeDelta = Mathf.Clamp(BufferJumpTimeDelta + Time.deltaTime, 0, 2*BufferJumpGracePeriod);
-        Debug.Log("Current velocity: " + Vector3.ProjectOnPlane(current_velocity, transform.up).magnitude.ToString());
+        //Debug.Log("Current velocity: " + Vector3.ProjectOnPlane(current_velocity, transform.up).magnitude.ToString());
         Debug.Log("Velocity error: " + (current_velocity - cc.velocity).ToString());
         accel = Vector3.zero;
 
@@ -86,25 +88,44 @@ public class PlayerController : MonoBehaviour {
         accel += Physics.gravity * GravityMult;
         current_velocity += accel * Time.deltaTime;
         cc.Move(current_velocity * Time.deltaTime);
-	}
+
+        // Increment timers
+        LandingTimeDelta = Mathf.Clamp(LandingTimeDelta + Time.deltaTime, 0, 2 * jumpGracePeriod);
+        SlideTimeDelta = Mathf.Clamp(SlideTimeDelta + Time.deltaTime, 0, 2 * SlideGracePeriod);
+        BufferJumpTimeDelta = Mathf.Clamp(BufferJumpTimeDelta + Time.deltaTime, 0, 2 * BufferJumpGracePeriod);
+    }
 
     // Apply movement forces from input (FAST edition)
     private void HandleMovement()
     {
+        Vector3 planevelocity;
         Vector3 movVec = Input.GetAxisRaw("Vertical") * transform.forward + Input.GetAxisRaw("Horizontal") * transform.right;
-        if (lastHit != null && cc.isGrounded)
+        // Do this first so we cancel out incremented time from update before checking it
+        if (!OnGround())
         {
-            //Debug.Log("We are on the ground");
-            movVec = Vector3.ProjectOnPlane(movVec, lastHit.normal);
+            // We are in the air (for atleast LandingGracePeriod). We will slide on landing if moving fast enough.
+            SlideTimeDelta = 0;
+            planevelocity = current_velocity;
         }
-        if (OnGround())
+        else
         {
-            AccelerateTo(movVec, RunSpeed, GroundAcceleration);
-            if (!willJump)
+            planevelocity = Vector3.ProjectOnPlane(current_velocity, lastHit.normal);
+        }
+        // Normal ground behavior
+        if (OnGround() && !willJump && (SlideTimeDelta >= SlideGracePeriod || planevelocity.magnitude < SlideSpeed))
+        {
+            // If we weren't fast enough we aren't going to slide
+            SlideTimeDelta = SlideGracePeriod;
+            // Use character controller grounded check to be certain we are actually on the ground
+            if (lastHit != null && cc.isGrounded)
             {
-                accel += -current_velocity * SpeedDamp;
+                Debug.Log("We are on the ground");
+                movVec = Vector3.ProjectOnPlane(movVec, lastHit.normal);
             }
+            AccelerateTo(movVec, RunSpeed, GroundAcceleration);
+            accel += -current_velocity * SpeedDamp;
         }
+        // We are either in the air, buffering a jump, or sliding (recent contact with ground). Use air accel.
         else
         {
             AccelerateTo(movVec, AirSpeed, AirAcceleration);
@@ -141,7 +162,7 @@ public class PlayerController : MonoBehaviour {
             isFalling = false;
         }
 
-        // Add additional gravity when going down
+        // Add additional gravity when going down (optional)
         if (current_velocity.y < 0)
         {
             GravityMult += DownGravityAdd;
@@ -156,6 +177,7 @@ public class PlayerController : MonoBehaviour {
                 DoJump();
             }
         }
+        // Fall fast when we let go of jump (optional)
         if (isFalling || isJumping && !Input.GetButton("Jump"))
         {
             GravityMult += ShortHopGravityAdd;
@@ -187,17 +209,17 @@ public class PlayerController : MonoBehaviour {
     {
         // Conserve velocity along plane, zero it out on the normal
         lastHit = hit;
-
+        //Debug.Log("Hit normal: " + hit.normal);
         // isGrounded doesn't work properly on slopes, replace with this.
-        if (hit.normal.y > 0.5)
+        if (hit.normal.y > 0.6)
         {
             //Debug.Log("On the ground");
-            Debug.DrawRay(transform.position, hit.normal, Color.red, 10);
+            Debug.DrawRay(transform.position, hit.normal, Color.red, 100);
             canJump = true;
             LandingTimeDelta = 0;
 
             // Handle buffered jumps
-            if (BufferJumpTimeDelta <  BufferJumpGracePeriod)
+            if (BufferJumpTimeDelta < BufferJumpGracePeriod)
             {
                 // Defer the jump so that it happens in update
                 willJump = true;
