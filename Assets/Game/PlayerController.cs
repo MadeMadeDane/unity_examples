@@ -31,6 +31,12 @@ public class PlayerController : MonoBehaviour {
     private float BufferJumpTimeDelta;
     private float BufferJumpGracePeriod;
 
+    private float _input_vertical_axis;
+    private float _input_horizontal_axis;
+    private bool _input_jump_button;
+    private bool _input_jump_buttondown;
+    private float _input_scroll_axis;
+
     private Vector3 current_velocity;
     private Vector3 accel;
     private ControllerColliderHit lastHit;
@@ -67,13 +73,34 @@ public class PlayerController : MonoBehaviour {
         BufferJumpTimeDelta = BufferJumpGracePeriod;
 
         // Initial state
+        _input_vertical_axis = 0f;
+        _input_horizontal_axis = 0f;
+        _input_jump_button = false;
+        _input_jump_buttondown = false;
+        _input_scroll_axis = 0f;
+
         current_velocity = Vector3.zero;
         StartPos = new Vector3(0.5f, 1.5f, 0.5f);
         transform.position = StartPos;
     }
-	
-	// Update is called once per frame
-	void Update () {
+
+    // Update is called once per frame
+    private void Update()
+    {
+        GetInputs();
+    }
+
+    private void GetInputs()
+    {
+        _input_vertical_axis = Input.GetAxisRaw("Vertical");
+        _input_horizontal_axis = Input.GetAxisRaw("Horizontal");
+        _input_jump_button = Input.GetButton("Jump");
+        _input_jump_buttondown = Input.GetButtonDown("Jump");
+        _input_scroll_axis = Input.GetAxis("Mouse ScrollWheel");
+    }
+
+    // Fixed Update is called once per physics tick
+    void FixedUpdate () {
         // Get starting values
         GravityMult = 1;
         //Debug.Log("Current velocity: " + Vector3.ProjectOnPlane(current_velocity, transform.up).magnitude.ToString());
@@ -99,7 +126,7 @@ public class PlayerController : MonoBehaviour {
     private void HandleMovement()
     {
         Vector3 planevelocity;
-        Vector3 movVec = Input.GetAxisRaw("Vertical") * transform.forward + Input.GetAxisRaw("Horizontal") * transform.right;
+        Vector3 movVec = _input_vertical_axis * transform.forward + _input_horizontal_axis * transform.right;
         // Do this first so we cancel out incremented time from update before checking it
         if (!OnGround())
         {
@@ -169,7 +196,7 @@ public class PlayerController : MonoBehaviour {
         }
 
         // Handle jumping and falling
-        if (Input.GetButtonDown("Jump") || Mathf.Abs(Input.GetAxis("Mouse ScrollWheel")) > 0 || willJump)
+        if (_input_jump_buttondown || Mathf.Abs(_input_scroll_axis) > 0 || willJump)
         {
             BufferJumpTimeDelta = 0;
             if (OnGround())
@@ -178,7 +205,7 @@ public class PlayerController : MonoBehaviour {
             }
         }
         // Fall fast when we let go of jump (optional)
-        if (isFalling || isJumping && !Input.GetButton("Jump"))
+        if (isFalling || isJumping && !_input_jump_button)
         {
             GravityMult += ShortHopGravityAdd;
             isFalling = true;
