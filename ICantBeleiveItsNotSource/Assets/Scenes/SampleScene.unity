@@ -1274,7 +1274,7 @@ Prefab:
     - target: {fileID: 114496736515771432, guid: fa86362c5ec32824fa4eca164894b67a,
         type: 2}
       propertyPath: mouse_sensitivity
-      value: 3
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 114496736515771432, guid: fa86362c5ec32824fa4eca164894b67a,
         type: 2}
@@ -3702,7 +3702,7 @@ MonoBehaviour:
   AirAcceleration: 0
   SpeedDamp: 0
   AirSpeedDamp: 0
-  slideMultiplier: 0
+  SlideSpeed: 0
   cc: {fileID: 1952138144}
   DownGravityAdd: 0
   ShortHopGravityAdd: 0
