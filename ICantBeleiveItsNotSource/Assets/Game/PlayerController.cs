@@ -47,11 +47,11 @@ public class PlayerController : MonoBehaviour {
         // Movement values
         maxSpeed = 4;
         RunSpeed = 3;
-        AirSpeed = 0.30f;
+        AirSpeed = 0.3f;
         GroundAcceleration = 20;
         AirAcceleration = 500;
         SpeedDamp = 10f;
-        AirSpeedDamp = 0.01f;
+        AirSpeedDamp = 0.05f;
         SlideGracePeriod = 0.2f;
         SlideTimeDelta = SlideGracePeriod;
         SlideSpeed = 4f;

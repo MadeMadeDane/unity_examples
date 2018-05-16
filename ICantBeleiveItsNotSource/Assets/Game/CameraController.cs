@@ -25,15 +25,22 @@ public class CameraController : MonoBehaviour {
     private int mouseQueueCount = 4;
     private Vector2 mouseAccumlator = Vector2.zero;
 
+    private float _input_mouse_x;
+    private float _input_mouse_y;
+    private float _input_joy_x;
+    private float _input_joy_y;
+
     // Use this for initialization
-    void Start () { 
+    void Start () {
+        //QualitySettings.vSyncCount = 0;
+        //Application.targetFrameRate = 30;
         mouseQueue = new Queue<Vector2>(Enumerable.Repeat<Vector2>(Vector2.zero, mouseQueueCount));
         mouse_multiplier = 100;
         controller_multiplier = 50;
         mouse_sensitivity = 2*Vector2.one;
         controller_sensitivity = new Vector2(6, 3);
-        //target_follow_distance = new Vector3(0f, 0.4f, -1f);
-        //target_follow_angle = new Vector3(14f, 0f, 0f);
+        target_follow_distance = new Vector3(0f, 0.4f, 0f);
+        target_follow_angle = new Vector3(0f, 0f, 0f);
         pivot = new GameObject("pivot");
         PlayerController player_home = home.GetComponent<PlayerController>();
         if (player_home == null)
@@ -50,9 +57,17 @@ public class CameraController : MonoBehaviour {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
-	
-	// LateUpdate is called after update. Ensures we are operating on the latest transform changes.
-	void LateUpdate () {
+
+    // LateUpdate is called after update. Ensures we are operating on the latest transform changes.
+    private void Update()
+    {
+        _input_mouse_x = Input.GetAxis("Mouse X");
+        _input_mouse_y = Input.GetAxis("Mouse Y");
+        _input_joy_x = Input.GetAxisRaw("Joy X");
+        _input_joy_y = Input.GetAxisRaw("Joy Y");
+    }
+
+    void FixedUpdate () {
         UpdateCameraAngles();
 	}
 
@@ -61,11 +76,11 @@ public class CameraController : MonoBehaviour {
     {
         // Handle both mouse and gamepad at the same time
         Vector2 rotVecM = new Vector2(
-            Input.GetAxis("Mouse X"),
-            Input.GetAxis("Mouse Y")) * mouse_sensitivity * mouse_multiplier * Time.deltaTime;
+            _input_mouse_x,
+            _input_mouse_y) * mouse_sensitivity * mouse_multiplier * Time.deltaTime;
         Vector2 rotVecC = new Vector2(
-            Input.GetAxisRaw("Joy X"),
-            Input.GetAxisRaw("Joy Y")) * controller_sensitivity * controller_multiplier * Time.deltaTime;
+            _input_joy_x,
+            _input_joy_y) * controller_sensitivity * controller_multiplier * Time.deltaTime;
         Vector2 rotVec = rotVecM + rotVecC;
 
         // Use rolling average for mouse smoothing (unity sucks at mouse input)
