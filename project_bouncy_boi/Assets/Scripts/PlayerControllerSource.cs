@@ -2,8 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
-public class PlayerControllerSource : MonoBehaviour {
+public class PlayerControllerSource : NetworkBehaviour {
     public Camera player_camera;
     public float maxSpeed;
     public float RunSpeed;
@@ -88,6 +89,11 @@ public class PlayerControllerSource : MonoBehaviour {
     // Update is called once per frame
     private void Update()
     {
+        if (!isLocalPlayer)
+        {
+            player_camera.enabled = false;
+            return;
+        }
         GetInputs();
     }
 
@@ -128,6 +134,7 @@ public class PlayerControllerSource : MonoBehaviour {
     // Apply movement forces from input (FAST edition)
     private void HandleMovement()
     {
+
         Vector3 planevelocity;
         Vector3 movVec = _input_vertical_axis * transform.forward + _input_horizontal_axis * transform.right;
         // Do this first so we cancel out incremented time from update before checking it

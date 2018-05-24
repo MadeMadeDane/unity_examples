@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class CameraControllerSource : MonoBehaviour {
 
@@ -53,6 +54,11 @@ public class CameraControllerSource : MonoBehaviour {
 	
 	// LateUpdate is called after update. Ensures we are operating on the latest transform changes.
 	void LateUpdate () {
+       // Debug.Log("isLocalPlayer" + home.GetComponent<NetworkIdentity>().isLocalPlayer);
+        if (!home.GetComponent<NetworkIdentity>().isLocalPlayer)
+        {
+            return;
+        }
         UpdateCameraAngles();
 	}
 
