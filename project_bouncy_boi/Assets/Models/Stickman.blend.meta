@@ -38,6 +38,10 @@ ModelImporter:
     100064: UpLegL
     100066: UpLegR
     100068: UpSpine
+    100070: IKLegL
+    100072: IKLegR
+    100074: KneeL
+    100076: KneeR
     400000: Armature
     400002: Bone
     400004: Bone_001
@@ -73,6 +77,10 @@ ModelImporter:
     400064: UpLegL
     400066: UpLegR
     400068: UpSpine
+    400070: IKLegL
+    400072: IKLegR
+    400074: KneeL
+    400076: KneeR
     2100000: unnamed
     4300000: Cylinder
     7400000: Default Take
